@@ -8,7 +8,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('Hello, World! This is a basic Express server.');
+  res.send('Hello, World!');
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {
