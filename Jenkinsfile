@@ -57,24 +57,26 @@ pipeline {
             steps {
                 script {
                     echo 'Tagging and pushing images...'
+                    def projectName = sh(script: 'basename $(pwd)', returnStdout: true).trim()
+                    
                     // Если используете Docker Hub, раскомментируйте:
                     // withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
                     //                                   usernameVariable: 'DOCKER_USER', 
                     //                                   passwordVariable: 'DOCKER_PASS')]) {
-                    //     sh '''
-                    //         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    //         docker tag nts_test_assignment-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    //         docker tag nts_test_assignment-web1:latest ${DOCKER_IMAGE}:latest
+                    //     sh """
+                    //         echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                    //         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    //         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:latest
                     //         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                     //         docker push ${DOCKER_IMAGE}:latest
-                    //     '''
+                    //     """
                     // }
                     
                     // Для локального деплоя без registry:
-                    sh '''
-                        docker tag nts_test_assignment-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker tag nts_test_assignment-web1:latest ${DOCKER_IMAGE}:latest
-                    '''
+                    sh """
+                        docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:latest
+                    """
                 }
             }
         }
