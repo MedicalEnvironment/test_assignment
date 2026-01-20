@@ -34,7 +34,8 @@ docker compose down
 ├── nginx.conf              # Конфигурация reverse proxy
 ├── Jenkinsfile             # CI/CD pipeline
 ├── deploy.sh               # Скрипт деплоя
-└── JENKINS_SETUP.md        # Инструкция по настройке Jenkins
+├── proxmox-setup.sh        # Подготовка ноды в Proxmox VE
+└── README.md               # Документация
 ```
 
 ## Endpoints
@@ -154,6 +155,11 @@ for i in {1..10}; do curl http://localhost; echo; done
 
 **Подготовка ноды:**
 ```bash
+# Автоматическая подготовка ноды (рекомендуется)
+chmod +x proxmox-setup.sh
+./proxmox-setup.sh
+
+# Или вручную:
 # Установка QEMU Guest Agent для интеграции с Proxmox
 sudo apt update && sudo apt install -y qemu-guest-agent
 sudo systemctl enable qemu-guest-agent
