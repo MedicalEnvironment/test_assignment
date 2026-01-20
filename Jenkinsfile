@@ -37,14 +37,18 @@ pipeline {
             steps {
                 script {
                     echo 'Running tests...'
+                    // Получаем имя проекта из docker compose
+                    def projectName = sh(script: 'basename $(pwd)', returnStdout: true).trim()
+                    echo "Project name: ${projectName}"
+                    
                     // Запуск контейнера для тестирования
-                    sh '''
+                    sh """
                         # Запускаем контейнер для тестов
                         docker run --rm \
                             -e NODE_ENV=test \
-                            nts_test_assignment-web1:latest \
+                            ${projectName}-web1:latest \
                             node -e "console.log('Health check test passed')"
-                    '''
+                    """
                 }
             }
         }
