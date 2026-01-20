@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker images...'
-                    sh 'docker compose build --no-cache'
+                    sh 'docker compose build'
                 }
             }
         }
@@ -66,10 +66,8 @@ pipeline {
                 script {
                     echo 'Deploying application...'
                     sh '''
-                        docker compose down || true
-                        docker image prune -f
-                        docker compose up -d
-                        sleep 10
+                        docker compose up -d --build
+                        sleep 15
                         docker compose ps
                         curl -f http://localhost/health || exit 1
                     '''
