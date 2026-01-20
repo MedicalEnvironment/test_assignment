@@ -5,12 +5,11 @@ pipeline {
         DOCKER_REGISTRY = 'docker.io'
         DOCKER_IMAGE = 'akbarabayev/hello-world-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
-        DEPLOY_SERVER = 'localhost' // Если Jenkins на той же машине, иначе укажите IP
+        DEPLOY_SERVER = 'localhost'
         APP_DIR = '/opt/hello-world-app'
     }
     
     triggers {
-        // Триггер на push в main ветку
         githubPush()
     }
     
@@ -26,9 +25,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker images...'
-                    sh '''
-                        docker compose build --no-cache
-                    '''
+                    sh 'docker compose build --no-cache'
                 }
             }
         }
@@ -37,13 +34,10 @@ pipeline {
             steps {
                 script {
                     echo 'Running tests...'
-                    // Получаем имя проекта из docker compose
                     def projectName = sh(script: 'basename $(pwd)', returnStdout: true).trim()
                     echo "Project name: ${projectName}"
                     
-                    // Запуск контейнера для тестирования
                     sh """
-                        # Запускаем контейнер для тестов
                         docker run --rm \
                             -e NODE_ENV=test \
                             ${projectName}-web1:latest \
@@ -53,26 +47,12 @@ pipeline {
             }
         }
         
-        stage('Tag and Push to Registry') {
+        stage('Tag Images') {
             steps {
                 script {
-                    echo 'Tagging and pushing images...'
+                    echo 'Tagging images...'
                     def projectName = sh(script: 'basename $(pwd)', returnStdout: true).trim()
                     
-                    // Если используете Docker Hub, раскомментируйте:
-                    // withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
-                    //                                   usernameVariable: 'DOCKER_USER', 
-                    //                                   passwordVariable: 'DOCKER_PASS')]) {
-                    //     sh """
-                    //         echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                    //         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    //         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:latest
-                    //         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    //         docker push ${DOCKER_IMAGE}:latest
-                    //     """
-                    // }
-                    
-                    // Для локального деплоя без registry:
                     sh """
                         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:${DOCKER_TAG}
                         docker tag ${projectName}-web1:latest ${DOCKER_IMAGE}:latest
@@ -81,50 +61,27 @@ pipeline {
             }
         }
         
-        stage('Deploy to Server') {
+        stage('Deploy') {
             steps {
                 script {
                     echo 'Deploying application...'
-                    
-                    // Если Jenkins на той же машине, что и приложение:
                     sh '''
-                        # Остановка старых контейнеров
                         docker compose down || true
-                        
-                        # Удаление старых образов (опционально)
                         docker image prune -f
-                        
-                        # Запуск новых контейнеров
                         docker compose up -d
-                        
-                        # Проверка статуса
                         sleep 10
                         docker compose ps
-                        
-                        # Health check
                         curl -f http://localhost/health || exit 1
                     '''
-                    
-                    // Если деплой на удаленный сервер по SSH:
-                    // sh '''
-                    //     ssh user@${DEPLOY_SERVER} "
-                    //         cd ${APP_DIR} && \
-                    //         git pull origin main && \
-                    //         docker compose down && \
-                    //         docker compose up -d --build && \
-                    //         docker compose ps
-                    //     "
-                    // '''
                 }
             }
         }
         
-        stage('Verify Deployment') {
+        stage('Verify') {
             steps {
                 script {
                     echo 'Verifying deployment...'
                     sh '''
-                        # Проверка health check всех сервисов
                         echo "Checking Nginx health..."
                         curl -f http://localhost/nginx-health || exit 1
                         
@@ -144,36 +101,16 @@ pipeline {
     post {
         success {
             echo 'Deployment successful!'
-            // Уведомления (опционально)
-            // emailext(
-            //     subject: "Deployment Successful - Build #${BUILD_NUMBER}",
-            //     body: "The application has been successfully deployed.",
-            //     to: "your-email@example.com"
-            // )
         }
         
         failure {
             echo 'Deployment failed!'
-            // Откат к предыдущей версии
-            sh '''
-                docker compose down || true
-                # Здесь можно добавить логику отката
-            '''
-            
-            // Уведомления (опционально)
-            // emailext(
-            //     subject: "Deployment Failed - Build #${BUILD_NUMBER}",
-            //     body: "The deployment has failed. Please check the Jenkins logs.",
-            //     to: "your-email@example.com"
-            // )
+            sh 'docker compose down || true'
         }
         
         always {
-            // Очистка
             echo 'Cleaning up...'
-            sh '''
-                docker system prune -f --volumes || true
-            '''
+            sh 'docker system prune -f --volumes || true'
         }
     }
 }
